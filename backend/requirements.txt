@@ -29,7 +29,7 @@ numpy==1.26.4
 pyTelegramBotAPI==4.22.1
 
 # GridFS for image storage in MongoDB
-pymongo==4.8.0
+pymongo==4.9.0
 
 bcrypt==4.0.1
 
