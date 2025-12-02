@@ -14,8 +14,8 @@ app = FastAPI(title=settings.APP_NAME)
 # ---------- Middleware ----------
 app.add_middleware(
     CORSMiddleware,
+    allow_origin_regex="https://.*\.vercel\.app",
     allow_origins=[
-        "https://securo-git-main-suvintms-projects.vercel.app",
         "http://localhost:5173",
         "http://127.0.0.1:5173",
         "http://localhost:5174",
@@ -31,7 +31,7 @@ def root():
     return {"status": "running", "message": "Securo backend is live!"}
 
 @app.get("/health")
-async def health():
+async def health(): 
     return {"ok": True}
 
 # ---------- Routers ----------
