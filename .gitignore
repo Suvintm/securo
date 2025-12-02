@@ -1,0 +1,19 @@
+# OS-Specific Files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE & Editor Files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Environment Variables
+.env
+.env.local
+*.env
+
+# Logs
+*.log

@@ -1,0 +1,99 @@
+# Python Virtual Environments
+.venv/
+venv/
+env/
+ENV/
+virtualenv/
+
+# Python Cache & Compiled Files
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Environment Variables & Secrets
+.env
+.env.local
+.env.*.local
+*.env
+.envrc
+secrets/
+*.key
+*.pem
+
+# AI Models - loaded from GitHub releases
+ai_models/
+app/ai_models/
+ai_backup_models/
+app/ai_backup_models/
+*.pt
+*.pth
+*.onnx
+*.weights
+
+# Database Files
+*.db
+*.sqlite
+*.sqlite3
+db.sqlite3
+data/
+
+# Logs & Temporary Files
+*.log
+logs/
+*.tmp
+*.temp
+temp/
+tmp/
+
+# IDE & Editor Files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.sublime-project
+*.sublime-workspace
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+coverage.xml
+*.cover
+
+# Build & Distribution
+build/
+dist/
+*.egg-info/
+*.egg
+wheels/
+
+# OS-Specific Files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# FastAPI / Uvicorn
+*.pid
+fastapi_cache/
+
+# Jupyter Notebooks (checkpoints)
+.ipynb_checkpoints/
+
+# MyPy type checker
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Uploads & Media (if not using cloud storage)
+uploads/
+media/
+static/media/
+ai_backup_models/
+app/ai_backup_models/

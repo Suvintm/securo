@@ -21,26 +21,24 @@ const modelIcons = {
 const getIcon = (iconName) => Icons[iconName] || Icons.AlertTriangle;
 
 const ModelCard = ({ title }) => {
-  const [isActive, setIsActive] = useState(true);
+  const { updateModelStatus, activeModels } = useModelContext();
   const [isLoading, setIsLoading] = useState(false);
-  const { updateModelStatus } = useModelContext();
-
 
   const modelName = title.toLowerCase().includes("people")
     ? "people"
     : title.toLowerCase().includes("weapon")
-    ? "weapon"
-    : title.toLowerCase().includes("fire")
-    ? "fire"
-    : title.toLowerCase().includes("shoplifting")
-    ? "shoplifting"
-    : title.toLowerCase().includes("crowd")
-    ? "crowd"
-    : title.toLowerCase().includes("accident")
-    ? "Accident"
-    : title.toLowerCase().includes("vandalism")
-    ? "Vandalism"
-    : "";
+      ? "weapon"
+      : title.toLowerCase().includes("fire")
+        ? "fire"
+        : title.toLowerCase().includes("shoplifting")
+          ? "shoplifting"
+          : title.toLowerCase().includes("crowd")
+            ? "crowd"
+            : title.toLowerCase().includes("accident")
+              ? "Accident"
+              : title.toLowerCase().includes("vandalism")
+                ? "Vandalism"
+                : "";
 
   const key = Object.keys(modelIcons).find((k) =>
     modelName.toLowerCase().includes(k)
@@ -48,19 +46,8 @@ const ModelCard = ({ title }) => {
   const { icon: iconName, color } = modelIcons[key] || modelIcons.people;
   const Icon = getIcon(iconName);
 
-  useEffect(() => {
-    const fetchStatus = async () => {
-      try {
-        const res = await axiosClient.get("/pipeline/models/status");
-        if (res.data && res.data[modelName] !== undefined) {
-          setIsActive(res.data[modelName]);
-        }
-      } catch (err) {
-        console.error("Failed to fetch model status:", err);
-      }
-    };
-    fetchStatus();
-  }, [modelName]);
+  // ✅ Derive active state directly from context
+  const isActive = activeModels.some(m => m.name === modelName);
 
   const toggleModel = async () => {
     setIsLoading(true);
@@ -79,8 +66,8 @@ const ModelCard = ({ title }) => {
 
     try {
       await axiosClient.post(`/pipeline/model/${modelName}/${action}`);
-      setIsActive(!isActive);
-      updateModelStatus(modelName, title, !isActive); // ✅ Sync context
+      // ✅ Update context immediately
+      updateModelStatus(modelName, title, !isActive);
 
       toast.success(
         `${title} ${isActive ? "deactivated" : "activated"} successfully!`,
@@ -124,11 +111,10 @@ const ModelCard = ({ title }) => {
     <motion.div
       whileHover={{ scale: 1.04, y: -4 }}
       transition={{ type: "spring", stiffness: 150 }}
-      className={`relative bg-gradient-to-br from-gray-950 via-gray-900 to-gray-800 text-white p-6 rounded-2xl shadow-xl border ${
-        isActive ? "border-green-500/50" : "border-gray-700"
-      } hover:shadow-lg hover:shadow-blue-800/20 transition-all`}
+      className={`relative bg-gradient-to-br from-gray-950 via-gray-900 to-gray-800 text-white p-6 rounded-2xl shadow-xl border ${isActive ? "border-green-500/50" : "border-gray-700"
+        } hover:shadow-lg hover:shadow-blue-800/20 transition-all`}
     >
-      
+
       <div className="flex flex-col items-center text-center">
         <div
           className={`p-3 rounded-full bg-gray-800/60 border border-gray-700 shadow-inner mb-3`}
@@ -140,22 +126,31 @@ const ModelCard = ({ title }) => {
           {title}
         </h3>
 
-        <p
-          className={`text-sm mb-4 font-medium ${
-            isActive ? "text-green-400" : "text-red-400"
-          }`}
-        >
-          Status: {isActive ? "Active" : "Inactive"}
-        </p>
+        <div className="flex items-center justify-center gap-2 mb-4">
+          <span className={`relative flex h-3 w-3`}>
+            {isActive && (
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+            )}
+            <span
+              className={`relative inline-flex rounded-full h-3 w-3 ${isActive ? "bg-green-500" : "bg-red-500"
+                }`}
+            ></span>
+          </span>
+          <p
+            className={`text-sm font-medium ${isActive ? "text-green-400" : "text-red-400"
+              }`}
+          >
+            Status: {isActive ? "Active" : "Inactive"}
+          </p>
+        </div>
 
         <button
           onClick={toggleModel}
           disabled={isLoading}
-          className={`px-5 py-2 rounded-full font-semibold w-full flex items-center justify-center gap-2 transition-all shadow-md ${
-            isActive
-              ? "bg-red-600 hover:bg-red-700"
-              : "bg-green-600 hover:bg-green-700"
-          } text-white`}
+          className={`px-5 py-2 rounded-full font-semibold w-full flex items-center justify-center gap-2 transition-all shadow-md ${isActive
+            ? "bg-red-600 hover:bg-red-700"
+            : "bg-green-600 hover:bg-green-700"
+            } text-white`}
         >
           {isLoading ? (
             <>

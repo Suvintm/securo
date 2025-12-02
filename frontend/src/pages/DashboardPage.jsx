@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import CamerasPage from "./CamerasPage";
+import LiveStreamPage from "./LiveStreamPage";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import ModelCard from "../components/ModelCard";
@@ -12,7 +13,8 @@ import SkeletonLoader from "../components/SkeletonLoader";
 import { useModelContext } from "../context/ModelContext";
 import * as Icons from "lucide-react";
 import { Camera } from "lucide-react";
-
+import { activateAllModels, deactivateAllModels, getModelStatus } from "../api/pipeline";
+import toast from "react-hot-toast";
 
 const DashboardPage = () => {
   const { user, logout } = useAuth();
@@ -20,8 +22,8 @@ const DashboardPage = () => {
   const [showModal, setShowModal] = useState(false);
   const [activeSection, setActiveSection] = useState("models");
   const [loading, setLoading] = useState(false);
-  const { activeModels } = useModelContext();
-
+  const { activeModels, setAllModels } = useModelContext();
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const handleLogout = async () => {
     await logout();
@@ -32,6 +34,41 @@ const DashboardPage = () => {
     setLoading(true);
     setActiveSection(tab);
     setTimeout(() => setLoading(false), 1200);
+  };
+
+  const handleActivateAll = async () => {
+    try {
+      console.log("Activating all models...");
+      await activateAllModels();
+      toast.success("All models activated!");
+
+      console.log("Fetching model status...");
+      const response = await getModelStatus();
+      console.log("Received response:", response);
+
+      const status = response.data || response;
+      console.log("Parsed status:", status);
+
+      const newActive = Object.keys(status).filter(k => status[k]).map(k => ({ name: k, title: k.charAt(0).toUpperCase() + k.slice(1) + " Detection" }));
+      console.log("Setting active models:", newActive);
+
+      setAllModels(newActive);
+      setRefreshKey(prev => prev + 1);
+    } catch (error) {
+      console.error("Error activating all models:", error);
+      toast.error("Failed to activate all models");
+    }
+  };
+
+  const handleDeactivateAll = async () => {
+    try {
+      await deactivateAllModels();
+      toast.success("All models deactivated!");
+      setAllModels([]);
+      setRefreshKey(prev => prev + 1);
+    } catch (error) {
+      toast.error("Failed to deactivate all models");
+    }
   };
 
   return (
@@ -70,7 +107,7 @@ const DashboardPage = () => {
         {[...Array(30)].map((_, i) => (
           <motion.div
             key={i}
-            className="absolute w-10 h-10 bg-purple-500 rounded-full  opacity-20"
+            className="absolute w-10 h-10 bg-purple-500 rounded-full opacity-20"
             animate={{
               x: Math.random() * 800 - 400,
               y: Math.random() * 400 - 200,
@@ -92,52 +129,68 @@ const DashboardPage = () => {
 
         <div className="relative z-10 text-center">
           {/* ✅ Active Models Display */}
-          {activeModels.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              className="absolute top-65 left-1/2 transform -translate-x-1/2 flex flex-wrap justify-center gap-4 px-6 py-3 bg-white/10 backdrop-blur-md border border-green-400/30 rounded-2xl shadow-lg"
-            >
-              {activeModels.map((model) => {
-                const Icon =
-                  Icons[
-                    model.title.toLowerCase().includes("fire")
-                      ? "Flame"
-                      : model.title.toLowerCase().includes("weapon")
-                      ? "ShieldAlert"
-                      : model.title.toLowerCase().includes("people")
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="absolute top-65 left-1/2 transform -translate-x-1/2 flex flex-wrap justify-center gap-4 px-6 py-3 bg-white/10 backdrop-blur-md border border-gray-500/30 rounded-2xl shadow-lg w-full max-w-5xl"
+          >
+            {[
+              { name: "people", title: "People" },
+              { name: "weapon", title: "Weapon" },
+              { name: "fire", title: "Fire" },
+              { name: "shoplifting", title: "Shoplifting" },
+              { name: "crowd", title: "Crowd" },
+              { name: "Accident", title: "Accident" },
+              { name: "Vandalism", title: "Vandalism" },
+            ].map((model) => {
+              const isActive = activeModels.some((m) => m.name === model.name);
+              const Icon =
+                Icons[
+                model.name.toLowerCase() === "fire"
+                  ? "Flame"
+                  : model.name.toLowerCase() === "weapon"
+                    ? "ShieldAlert"
+                    : model.name.toLowerCase() === "people"
                       ? "Users"
-                      : model.title.toLowerCase().includes("crowd")
-                      ? "UsersRound"
-                      : model.title.toLowerCase().includes("accident")
-                      ? "Car"
-                      : model.title.toLowerCase().includes("shoplifting")
-                      ? "ShoppingBag"
-                      : model.title.toLowerCase().includes("vandalism")
-                      ? "Hammer"
-                      : "Activity"
-                  ] || Icons.Activity;
+                      : model.name.toLowerCase() === "crowd"
+                        ? "UsersRound"
+                        : model.name.toLowerCase() === "accident"
+                          ? "Car"
+                          : model.name.toLowerCase() === "shoplifting"
+                            ? "ShoppingBag"
+                            : model.name.toLowerCase() === "vandalism"
+                              ? "Hammer"
+                              : "Activity"
+                ] || Icons.Activity;
 
-                return (
-                  <motion.div
-                    key={model.name}
-                    whileHover={{ scale: 1.1 }}
-                    className="flex items-center gap-2 bg-gray-900/70 text-green-400 px-3 py-1.5 rounded-full border border-green-500/40 shadow-md"
-                  >
-                    <span className="relative flex h-3 w-3">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
-                    </span>
-                    <Icon size={18} className="text-green-400" />
-                    <span className="font-semibold text-sm text-white">
-                      {model.title.replace("Detection", "").trim()}
-                    </span>
-                  </motion.div>
-                );
-              })}
-            </motion.div>
-          )}
+              return (
+                <motion.div
+                  key={model.name}
+                  whileHover={{ scale: 1.1 }}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-full border shadow-md transition-all ${isActive
+                    ? "bg-green-900/40 text-green-400 border-green-500/40"
+                    : "bg-red-900/40 text-red-400 border-red-500/40 opacity-70"
+                    }`}
+                >
+                  <span className="relative flex h-3 w-3">
+                    <span
+                      className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isActive ? "bg-green-400" : "bg-red-400"
+                        }`}
+                    ></span>
+                    <span
+                      className={`relative inline-flex rounded-full h-3 w-3 ${isActive ? "bg-green-500" : "bg-red-500"
+                        }`}
+                    ></span>
+                  </span>
+                  <Icon size={18} className={isActive ? "text-green-400" : "text-red-400"} />
+                  <span className="font-semibold text-sm text-white">
+                    {model.title}
+                  </span>
+                </motion.div>
+              );
+            })}
+          </motion.div>
 
           <h1 className="text-4xl lg:text-6xl font-bold tracking-wide mb-3">
             Secure<span className="text-blue-400">Vision</span> Dashboard
@@ -146,26 +199,49 @@ const DashboardPage = () => {
             Real-time anomaly detection and camera management
           </p>
 
-          <button
-            onClick={() => setShowModal(true)}
-            className="flex items-center justify-center gap-2 mx-auto px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-full font-semibold transition-all duration-300 shadow-blue-500/30 shadow-lg"
-          >
-            <PlusCircle size={22} />
-            Add / Create Camera
-          </button>
+          <div className="flex flex-col sm:flex-row justify-center gap-4 mb-8 px-4">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setShowModal(true)}
+              className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 rounded-xl font-bold text-white shadow-lg shadow-blue-500/20 transition-all border border-blue-400/20 backdrop-blur-sm"
+            >
+              <PlusCircle size={20} />
+              <span>Add Camera</span>
+            </motion.button>
+
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handleActivateAll}
+              className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 rounded-xl font-bold text-white shadow-lg shadow-emerald-500/20 transition-all border border-emerald-400/20 backdrop-blur-sm"
+            >
+              <Icons.CheckCircle size={20} />
+              <span>Activate All</span>
+            </motion.button>
+
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handleDeactivateAll}
+              className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 rounded-xl font-bold text-white shadow-lg shadow-red-500/20 transition-all border border-red-400/20 backdrop-blur-sm"
+            >
+              <Icons.XCircle size={20} />
+              <span>Deactivate All</span>
+            </motion.button>
+          </div>
 
           <div className="flex justify-center gap-6 mt-8">
-            {["models", "cameras", "anomalies"].map((tab) => (
+            {["models", "cameras", "livestream", "anomalies"].map((tab) => (
               <button
                 key={tab}
                 onClick={() => handleTabChange(tab)}
-                className={`px-5 py-2 rounded-full font-semibold transition-all ${
-                  activeSection === tab
-                    ? "bg-blue-600 text-white shadow-lg shadow-blue-500/30"
-                    : "bg-gray-700 text-gray-300 hover:bg-gray-600"
-                }`}
+                className={`px-5 py-2 rounded-full font-semibold transition-all ${activeSection === tab
+                  ? "bg-blue-600 text-white shadow-lg shadow-blue-500/30"
+                  : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                  }`}
               >
-                See All {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                See All {tab === "livestream" ? "Live Stream" : tab.charAt(0).toUpperCase() + tab.slice(1)}
               </button>
             ))}
           </div>
@@ -232,6 +308,14 @@ const DashboardPage = () => {
                   animate={{ opacity: 1, y: 0 }}
                 >
                   <CamerasPage />
+                </motion.div>
+              )}
+              {activeSection === "livestream" && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                >
+                  <LiveStreamPage />
                 </motion.div>
               )}
               {activeSection === "anomalies" && (

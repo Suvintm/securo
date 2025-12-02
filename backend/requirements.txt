@@ -1,0 +1,38 @@
+# Core backend
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+pydantic==2.9.2
+pydantic-settings==2.5.2
+python-dotenv==1.0.1
+
+# MongoDB (async)
+motor==3.6.0
+
+# Auth & Security
+passlib[bcrypt]==1.7.4
+python-jose==3.3.0
+email-validator==2.2.0
+python-multipart==0.0.9
+
+# AI / Computer Vision
+opencv-python==4.10.0.84
+torch==2.5.0+cpu
+torchvision==0.20.0+cpu
+torchaudio==2.5.0+cpu
+# (install GPU version manually if needed)
+
+# Image & media handling
+Pillow==10.4.0
+numpy==1.26.4
+
+# Telegram alerts
+pyTelegramBotAPI==4.22.1
+
+# GridFS for image storage in MongoDB
+pymongo==4.8.0
+gridfs==2.1.0
+bcrypt==4.0.1
+
+
+
+cloudinary==1.41.0

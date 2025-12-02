@@ -6,7 +6,7 @@ import {
   stopCamera,
 } from "../api/cameras";
 import axiosClient from "../api/axiosClient";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Camera,
   Upload,
@@ -17,7 +17,16 @@ import {
   Loader2,
   CheckCircle,
   AlertTriangle,
+  MapPin,
+  Zap,
+  CircleDot,
+  Sparkles,
+  FileVideo,
+  ScanSearch,
+  Power,
+  PowerOff,
 } from "lucide-react";
+import toast from "react-hot-toast";
 
 const CamerasPage = () => {
   const [cameras, setCameras] = useState([]);
@@ -60,9 +69,10 @@ const CamerasPage = () => {
       await startCamera(id);
       await axiosClient.post("/pipeline/start");
       await fetchCameras();
+      toast.success("Camera started successfully!");
     } catch (err) {
       console.error("Start pipeline error:", err);
-      alert(err.response?.data?.detail || "Failed to start pipeline");
+      toast.error(err.response?.data?.detail || "Failed to start pipeline");
     } finally {
       setIsStarting(false);
       setProcessingId(null);
@@ -76,9 +86,10 @@ const CamerasPage = () => {
       await axiosClient.post("/pipeline/stop");
       await stopCamera(id);
       await fetchCameras();
+      toast.success("Camera stopped successfully!");
     } catch (err) {
       console.error("Stop pipeline error:", err);
-      alert(err.response?.data?.detail || "Failed to stop pipeline");
+      toast.error(err.response?.data?.detail || "Failed to stop pipeline");
     } finally {
       setIsStopping(false);
       setProcessingId(null);
@@ -101,215 +112,366 @@ const CamerasPage = () => {
       });
       setResultImage(res.data.annotated_image);
       setDetections(res.data.detections);
+
+      if (res.data.detections.length > 0) {
+        toast.success(`Detected ${res.data.detections.length} anomaly(ies)!`);
+      } else {
+        toast.info("No anomalies detected in the uploaded file.");
+      }
     } catch (err) {
       console.error("Detection failed:", err);
-      alert("Detection failed. Please check file format.");
+      const errorMsg = err.response?.data?.detail || "Detection failed. Please check file format.";
+      toast.error(errorMsg);
     } finally {
       setUploading(false);
     }
   };
 
   return (
-    <div className="p-8 bg-gradient-to-br from-gray-950 via-gray-900 to-black text-white min-h-screen">
-      <motion.h2
-        initial={{ y: -10, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        className="text-3xl font-bold mb-6 flex items-center gap-3"
-      >
-        <Camera className="text-green-500" size={32} /> Camera & Anomaly
-        Management
-      </motion.h2>
+    <div className="min-h-screen bg-gradient-to-br from-gray-950 via-purple-950 to-gray-900 text-white relative overflow-hidden">
+      {/* Animated Background */}
+      {[...Array(15)].map((_, i) => (
+        <motion.div
+          key={i}
+          className="absolute rounded-full bg-purple-500/10 blur-2xl"
+          style={{
+            width: Math.random() * 120 + 60,
+            height: Math.random() * 120 + 60,
+            top: `${Math.random() * 100}%`,
+            left: `${Math.random() * 100}%`,
+          }}
+          animate={{
+            y: [0, Math.random() * 80 - 40],
+            x: [0, Math.random() * 80 - 40],
+            opacity: [0.1, 0.25, 0.1],
+          }}
+          transition={{
+            duration: 12 + Math.random() * 8,
+            repeat: Infinity,
+            repeatType: "mirror",
+          }}
+        />
+      ))}
 
-      {/* 📁 File Upload Detection Section */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-gray-900/80 border border-gray-800 p-6 rounded-2xl shadow-lg mb-10"
-      >
-        <h3 className="text-2xl font-semibold mb-3 flex items-center gap-2">
-          <Upload className="text-blue-400" /> Upload Image / Video
-        </h3>
-        <p className="text-gray-400 mb-4">
-          Upload any image or short video — the system will stop the camera and
-          detect anomalies.
-        </p>
-
-        <div className="flex flex-col md:flex-row gap-6 items-start md:items-center">
-          <div className="flex-1 w-full">
-            <label className="flex flex-col items-center justify-center border-2 border-dashed border-gray-600 hover:border-blue-500 rounded-xl p-6 cursor-pointer transition">
-              <input
-                type="file"
-                accept="image/*,video/*"
-                onChange={(e) => setSelectedFile(e.target.files[0])}
-                className="hidden"
-              />
-              <div className="flex flex-col items-center">
-                <ImageIcon className="text-blue-400 mb-2" size={40} />
-                <span className="text-gray-400">
-                  {selectedFile ? selectedFile.name : "Click to choose file"}
-                </span>
-              </div>
-            </label>
-          </div>
-
-          <button
-            onClick={handleFileDetect}
-            disabled={!selectedFile || uploading}
-            className={`px-6 py-3 rounded-xl font-semibold shadow-lg transition flex items-center gap-2 ${
-              uploading
-                ? "bg-blue-700 cursor-not-allowed"
-                : "bg-blue-600 hover:bg-blue-700"
-            }`}
-          >
-            {uploading ? (
-              <>
-                <Loader2 className="animate-spin" /> Detecting...
-              </>
-            ) : (
-              <>
-                <AlertTriangle /> Detect Anomaly
-              </>
-            )}
-          </button>
-        </div>
-
-        {/* Side-by-Side View */}
-        <div className="grid md:grid-cols-2 gap-6 mt-8">
-          {/* Input Preview */}
-          <div className="bg-gray-800/70 p-4 rounded-xl border border-gray-700 flex flex-col items-center justify-center">
-            <h4 className="font-semibold mb-3 text-gray-300 flex items-center gap-2">
-              <Video className="text-blue-400" /> Input Preview
-            </h4>
-            {selectedFile ? (
-              selectedFile.type.startsWith("image") ? (
-                <img
-                  src={URL.createObjectURL(selectedFile)}
-                  alt="Preview"
-                  className="rounded-xl max-h-80 object-cover"
-                />
-              ) : (
-                <video
-                  src={URL.createObjectURL(selectedFile)}
-                  controls
-                  className="rounded-xl max-h-80"
-                />
-              )
-            ) : (
-              <div className="text-gray-500 italic">No file selected</div>
-            )}
-          </div>
-
-          {/* Output Result */}
-          <div className="bg-gray-800/70 p-4 rounded-xl border border-gray-700 flex flex-col items-center justify-center">
-            <h4 className="font-semibold mb-3 text-gray-300 flex items-center gap-2">
-              <CheckCircle className="text-green-400" /> Detection Result
-            </h4>
-
-            {uploading ? (
-              <motion.div
-                animate={{ opacity: [0.3, 1, 0.3] }}
-                transition={{ repeat: Infinity, duration: 1.2 }}
-                className="text-gray-400 italic"
-              >
-                Analyzing... Please wait
-              </motion.div>
-            ) : resultImage ? (
-              <img
-                src={`data:image/jpeg;base64,${resultImage}`}
-                alt="Detection Result"
-                className="rounded-xl max-h-80 object-cover"
-              />
-            ) : (
-              <div className="text-gray-500 italic">
-                Result will appear here
-              </div>
-            )}
-
-            {detections.length > 0 && (
-              <pre className="mt-3 text-xs bg-gray-900 text-gray-300 p-3 rounded-xl w-full overflow-x-auto max-h-56">
-                {JSON.stringify(detections, null, 2)}
-              </pre>
-            )}
-          </div>
-        </div>
-      </motion.div>
-
-      {/* 🎥 Camera Cards */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6"
-      >
-        {cameras.length === 0 && (
-          <p className="text-gray-500 text-center col-span-full">
-            No cameras available.
-          </p>
-        )}
-
-        {cameras.map((cam) => {
-          const isProcessing = processingId === cam.id;
-          const buttonText = cam.is_active
-            ? isProcessing && isStopping
-              ? "Stopping..."
-              : "Stop"
-            : isProcessing && isStarting
-            ? "Starting..."
-            : "Start";
-
-          return (
+      <div className="relative z-10 p-8 max-w-7xl mx-auto">
+        {/* Header */}
+        <motion.div
+          initial={{ y: -20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          className="mb-10"
+        >
+          <div className="flex items-center gap-4 mb-2">
             <motion.div
-              key={cam.id}
-              whileHover={{ scale: 1.03 }}
-              transition={{ type: "spring", stiffness: 150 }}
-              className="bg-gray-900 border border-gray-800 p-5 rounded-2xl shadow-md hover:shadow-blue-800/40 transition-all"
+              animate={{ rotate: [0, 5, -5, 0] }}
+              transition={{ duration: 2, repeat: Infinity }}
+              className="p-4 bg-gradient-to-br from-purple-600 to-pink-600 rounded-2xl shadow-2xl"
             >
-              <div className="flex items-center gap-3 mb-3">
-                <Camera
-                  size={28}
-                  className={cam.is_active ? "text-green-400" : "text-red-400"}
-                />
-                <h4 className="text-xl font-semibold">{cam.name}</h4>
+              <Camera size={36} className="text-white" />
+            </motion.div>
+            <div>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent">
+                Camera & Detection Hub
+              </h1>
+              <p className="text-gray-400 text-sm mt-1">
+                Manage cameras and detect anomalies in real-time
+              </p>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* File Upload Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="mb-10"
+        >
+          <div className="relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-pink-600/20 rounded-3xl blur-2xl opacity-60" />
+
+            <div className="relative bg-gradient-to-br from-gray-900/90 to-gray-800/90 backdrop-blur-xl border-2 border-gray-700/50 rounded-3xl p-8 shadow-2xl">
+              <div className="flex items-center gap-3 mb-6">
+                <motion.div
+                  animate={{ y: [0, -5, 0] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  className="p-3 bg-gradient-to-br from-blue-600/30 to-blue-500/30 rounded-xl"
+                >
+                  <Upload className="text-blue-400" size={28} />
+                </motion.div>
+                <div>
+                  <h2 className="text-2xl font-bold text-white">Upload & Detect</h2>
+                  <p className="text-gray-400 text-sm">
+                    Upload image or video for instant AI analysis
+                  </p>
+                </div>
               </div>
 
-              <p className="text-sm text-gray-400">{cam.location}</p>
-              <p className="text-sm mt-1 text-gray-400">Source: {cam.source}</p>
-              <p className="text-sm mt-1">
-                Status:{" "}
-                <span
-                  className={
-                    cam.is_active
-                      ? "text-green-400 font-semibold"
-                      : "text-red-400"
-                  }
-                >
-                  {cam.is_active ? "Active" : "Inactive"}
-                </span>
-              </p>
+              <div className="grid md:grid-cols-2 gap-6">
+                {/* Upload Area */}
+                <div className="space-y-4">
+                  <label className="block group">
+                    <div className="relative border-2 border-dashed border-gray-600 hover:border-blue-500 rounded-2xl p-8 cursor-pointer transition-all duration-300 bg-gray-800/30 hover:bg-gray-800/50">
+                      <input
+                        type="file"
+                        accept="image/*,video/*"
+                        onChange={(e) => setSelectedFile(e.target.files[0])}
+                        className="hidden"
+                      />
+                      <motion.div
+                        className="flex flex-col items-center"
+                        whileHover={{ scale: 1.05 }}
+                      >
+                        <motion.div
+                          animate={{ y: [0, -10, 0] }}
+                          transition={{ duration: 2, repeat: Infinity }}
+                        >
+                          <ImageIcon className="text-blue-400 mb-3" size={48} />
+                        </motion.div>
+                        <p className="text-white font-semibold mb-1">
+                          {selectedFile ? selectedFile.name : "Click to choose file"}
+                        </p>
+                        <p className="text-gray-500 text-sm">
+                          Supports images and videos
+                        </p>
+                      </motion.div>
+                    </div>
+                  </label>
 
-              <button
-                onClick={() =>
-                  cam.is_active ? handleStop(cam.id) : handleStart(cam.id)
-                }
-                disabled={isProcessing}
-                className={`mt-4 w-full py-2 rounded-xl flex items-center justify-center gap-2 font-semibold transition ${
-                  cam.is_active
-                    ? "bg-red-600 hover:bg-red-700"
-                    : "bg-green-600 hover:bg-green-700"
-                }`}
-              >
-                {isProcessing ? (
-                  <Loader2 className="animate-spin" />
-                ) : cam.is_active ? (
-                  <Square size={18} />
-                ) : (
-                  <Play size={18} />
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handleFileDetect}
+                    disabled={!selectedFile || uploading}
+                    className={`w-full py-4 rounded-2xl font-bold shadow-xl transition-all flex items-center justify-center gap-3 ${uploading || !selectedFile
+                        ? "bg-gray-700 cursor-not-allowed"
+                        : "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500"
+                      }`}
+                  >
+                    {uploading ? (
+                      <>
+                        <Loader2 className="animate-spin" size={20} />
+                        <span>Analyzing...</span>
+                      </>
+                    ) : (
+                      <>
+                        <ScanSearch size={20} />
+                        <span>Detect Anomalies</span>
+                      </>
+                    )}
+                  </motion.button>
+                </div>
+
+                {/* Results Preview */}
+                <div className="grid grid-rows-2 gap-4">
+                  {/* Input Preview */}
+                  <div className="bg-gradient-to-br from-gray-800/60 to-gray-700/60 backdrop-blur-sm p-4 rounded-2xl border border-gray-600/50">
+                    <div className="flex items-center gap-2 mb-3">
+                      <FileVideo className="text-purple-400" size={18} />
+                      <h4 className="font-semibold text-sm text-gray-300">Input Preview</h4>
+                    </div>
+                    <div className="bg-black/40 rounded-xl flex items-center justify-center h-32 overflow-hidden">
+                      {selectedFile ? (
+                        selectedFile.type.startsWith("image") ? (
+                          <img
+                            src={URL.createObjectURL(selectedFile)}
+                            alt="Preview"
+                            className="max-h-full object-contain"
+                          />
+                        ) : (
+                          <video
+                            src={URL.createObjectURL(selectedFile)}
+                            className="max-h-full object-contain"
+                          />
+                        )
+                      ) : (
+                        <ImageIcon className="text-gray-600" size={40} />
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Detection Result */}
+                  <div className="bg-gradient-to-br from-gray-800/60 to-gray-700/60 backdrop-blur-sm p-4 rounded-2xl border border-gray-600/50">
+                    <div className="flex items-center gap-2 mb-3">
+                      <CheckCircle className="text-green-400" size={18} />
+                      <h4 className="font-semibold text-sm text-gray-300">Detection Result</h4>
+                    </div>
+                    <div className="bg-black/40 rounded-xl flex items-center justify-center h-32 overflow-hidden">
+                      {uploading ? (
+                        <motion.div
+                          animate={{ opacity: [0.4, 1, 0.4] }}
+                          transition={{ duration: 1.5, repeat: Infinity }}
+                          className="text-gray-400 text-sm"
+                        >
+                          Processing...
+                        </motion.div>
+                      ) : resultImage ? (
+                        <img
+                          src={`data:image/jpeg;base64,${resultImage}`}
+                          alt="Result"
+                          className="max-h-full object-contain"
+                        />
+                      ) : (
+                        <Sparkles className="text-gray-600" size={40} />
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Detection Details */}
+              <AnimatePresence>
+                {detections.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="mt-6 bg-gradient-to-br from-green-900/30 to-green-800/20 border border-green-600/30 rounded-2xl p-4"
+                  >
+                    <p className="text-green-400 font-semibold mb-2 flex items-center gap-2">
+                      <CheckCircle size={18} />
+                      Found {detections.length} anomaly(ies)
+                    </p>
+                    <pre className="text-xs text-gray-300 bg-black/40 p-3 rounded-xl overflow-x-auto max-h-40">
+                      {JSON.stringify(detections, null, 2)}
+                    </pre>
+                  </motion.div>
                 )}
-                {buttonText}
-              </button>
-            </motion.div>
-          );
-        })}
-      </motion.div>
+              </AnimatePresence>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Camera Cards Section */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
+        >
+          <div className="flex items-center gap-3 mb-6">
+            <Zap className="text-yellow-400" size={24} />
+            <h2 className="text-2xl font-bold text-white">Active Cameras</h2>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {cameras.length === 0 ? (
+              <div className="col-span-full text-center py-16">
+                <motion.div
+                  animate={{ y: [0, -10, 0] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                >
+                  <Camera className="text-gray-600 mx-auto mb-4" size={64} />
+                </motion.div>
+                <p className="text-gray-500 text-lg">No cameras configured yet</p>
+              </div>
+            ) : (
+              cameras.map((cam, index) => {
+                const isProcessing = processingId === cam.id;
+                const buttonText = cam.is_active
+                  ? isProcessing && isStopping
+                    ? "Stopping..."
+                    : "Stop"
+                  : isProcessing && isStarting
+                    ? "Starting..."
+                    : "Start";
+
+                return (
+                  <motion.div
+                    key={cam.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                    whileHover={{ y: -8, scale: 1.02 }}
+                    className="relative group"
+                  >
+                    {/* Glow effect */}
+                    <div className={`absolute inset-0 rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity ${cam.is_active ? "bg-green-500/20" : "bg-red-500/20"
+                      }`} />
+
+                    <div className={`relative bg-gradient-to-br from-gray-900/90 to-gray-800/90 backdrop-blur-xl border-2 rounded-3xl p-6 shadow-xl transition-all ${cam.is_active
+                        ? "border-green-600/50 hover:border-green-500/70"
+                        : "border-red-600/50 hover:border-red-500/70"
+                      }`}>
+                      {/* Status Badge */}
+                      <div className="absolute top-4 right-4">
+                        <motion.div
+                          animate={{ scale: cam.is_active ? [1, 1.2, 1] : 1 }}
+                          transition={{ duration: 2, repeat: cam.is_active ? Infinity : 0 }}
+                          className={`px-3 py-1 rounded-full flex items-center gap-2 ${cam.is_active
+                              ? "bg-green-500/20 border border-green-500/50"
+                              : "bg-red-500/20 border border-red-500/50"
+                            }`}
+                        >
+                          <CircleDot size={12} className={cam.is_active ? "text-green-400" : "text-red-400"} />
+                          <span className={`text-xs font-bold ${cam.is_active ? "text-green-400" : "text-red-400"}`}>
+                            {cam.is_active ? "LIVE" : "OFF"}
+                          </span>
+                        </motion.div>
+                      </div>
+
+                      {/* Camera Icon */}
+                      <motion.div
+                        animate={{ rotate: cam.is_active ? [0, 5, -5, 0] : 0 }}
+                        transition={{ duration: 3, repeat: cam.is_active ? Infinity : 0 }}
+                        className="mb-4"
+                      >
+                        <div className={`inline-flex p-4 rounded-2xl ${cam.is_active
+                            ? "bg-gradient-to-br from-green-600/30 to-green-500/30"
+                            : "bg-gradient-to-br from-red-600/30 to-red-500/30"
+                          }`}>
+                          <Camera size={32} className={cam.is_active ? "text-green-400" : "text-red-400"} />
+                        </div>
+                      </motion.div>
+
+                      {/* Camera Name */}
+                      <h3 className="text-xl font-bold text-white mb-3">{cam.name}</h3>
+
+                      {/* Camera Details */}
+                      <div className="space-y-2 mb-6">
+                        <div className="flex items-center gap-2 text-gray-400 text-sm">
+                          <MapPin size={14} />
+                          <span>{cam.location}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-gray-400 text-sm">
+                          <Video size={14} />
+                          <span className="capitalize">{cam.source.replace("_", " ")}</span>
+                        </div>
+                      </div>
+
+                      {/* Control Button */}
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => cam.is_active ? handleStop(cam.id) : handleStart(cam.id)}
+                        disabled={isProcessing}
+                        className={`w-full py-3 rounded-2xl flex items-center justify-center gap-2 font-bold transition-all shadow-lg ${isProcessing
+                            ? "bg-gray-700 cursor-not-allowed"
+                            : cam.is_active
+                              ? "bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400"
+                              : "bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400"
+                          }`}
+                      >
+                        {isProcessing ? (
+                          <Loader2 className="animate-spin" size={20} />
+                        ) : cam.is_active ? (
+                          <>
+                            <PowerOff size={20} />
+                            <span>{buttonText}</span>
+                          </>
+                        ) : (
+                          <>
+                            <Power size={20} />
+                            <span>{buttonText}</span>
+                          </>
+                        )}
+                      </motion.button>
+                    </div>
+                  </motion.div>
+                );
+              })
+            )}
+          </div>
+        </motion.div>
+      </div>
     </div>
   );
 };
