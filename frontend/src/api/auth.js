@@ -4,14 +4,22 @@ export const registerUser = async (data) => {
   const res = await axiosClient.post("/auth/register", data, {
     headers: { "Content-Type": "application/json" },
   });
-  return res.data;
+  // Store token for cross-domain auth
+  if (res.data.token) {
+    localStorage.setItem("accessToken", res.data.token);
+  }
+  return res.data.user || res.data;
 };
 
 export const loginUser = async (data) => {
   const res = await axiosClient.post("/auth/login", data, {
     headers: { "Content-Type": "application/json" },
   });
-  return res.data;
+  // Store token for cross-domain auth
+  if (res.data.token) {
+    localStorage.setItem("accessToken", res.data.token);
+  }
+  return res.data.user || res.data;
 };
 
 export const getCurrentUser = async () => {
@@ -21,5 +29,7 @@ export const getCurrentUser = async () => {
 
 export const logoutUser = async () => {
   const res = await axiosClient.post("/auth/logout");
+  // Clear token from localStorage
+  localStorage.removeItem("accessToken");
   return res.data;
 };

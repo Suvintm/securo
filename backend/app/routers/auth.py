@@ -21,16 +21,23 @@ def set_auth_cookie(response: Response, token: str):
     )
 
 
-@router.post("/register", response_model=UserOut)
+@router.post("/register")
 async def register(payload: UserCreate, response: Response):
     try:
         user, token = await register_user(payload.name, payload.email, payload.password)
     except ValueError as e:
         raise HTTPException(status_code=409, detail=str(e))
+    
+    # Set cookie for backward compatibility (localhost)
     set_auth_cookie(response, token)
-    return user
+    
+    # Return token in response for cross-domain usage
+    return {
+        "user": UserOut(id=user["id"], name=user["name"], email=user["email"], role=user["role"]),
+        "token": token
+    }
 
-@router.post("/login", response_model=UserOut)
+@router.post("/login")
 async def login(payload: UserLogin, response: Response, request: Request):
     try:
         user, token = await login_user(
@@ -40,8 +47,15 @@ async def login(payload: UserLogin, response: Response, request: Request):
         )
     except ValueError as e:
         raise HTTPException(status_code=401, detail=str(e))
+    
+    # Set cookie for backward compatibility (localhost)
     set_auth_cookie(response, token)
-    return user
+    
+    # Return token in response for cross-domain usage
+    return {
+        "user": UserOut(id=user["id"], name=user["name"], email=user["email"], role=user["role"]),
+        "token": token
+    }
 
 @router.get("/me", response_model=UserOut)
 async def me(current=Depends(get_current_user)):
