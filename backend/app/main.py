@@ -25,6 +25,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/")
+def root():
+    return {"status": "running", "message": "Securo backend is live!"}
+
 @app.get("/health")
 async def health():
     return {"ok": True}
