@@ -4,7 +4,11 @@ import torch
 import traceback
 import logging
 
-pathlib.PosixPath = pathlib.WindowsPath
+
+
+import platform
+if platform.system() == 'Linux':
+    pathlib.WindowsPath = pathlib.PosixPath
 
 logging.getLogger("yolo_loader").setLevel(logging.DEBUG)
 
