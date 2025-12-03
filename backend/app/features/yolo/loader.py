@@ -7,12 +7,13 @@ import logging
 
 
 import platform
-# Cross-platform compatibility: Allow loading models trained on different OS
+import pathlib
+
+# ✅ Cross-platform compatibility: Allow loading models trained on different OS
+# This MUST run before any torch.load happens
 if platform.system() == 'Linux':
-    # On Linux servers, allow loading Windows-trained models
     pathlib.WindowsPath = pathlib.PosixPath
 elif platform.system() == 'Windows':
-    # On Windows, allow loading Linux-trained models
     pathlib.PosixPath = pathlib.WindowsPath
 
 logging.getLogger("yolo_loader").setLevel(logging.DEBUG)
