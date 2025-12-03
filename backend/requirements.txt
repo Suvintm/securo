@@ -20,6 +20,7 @@ torch==2.5.0+cpu
 torchvision==0.20.0+cpu
 torchaudio==2.5.0+cpu
 ultralytics==8.3.0
+gitpython>=3.1.30
 # (install GPU version manually if needed)
 
 # Image & media handling
