@@ -33,7 +33,7 @@ async def register(payload: UserCreate, response: Response):
     
     # Return token in response for cross-domain usage
     return {
-        "user": UserOut(id=user["id"], name=user["name"], email=user["email"], role=user["role"]),
+        "user": user,
         "token": token
     }
 
@@ -53,7 +53,7 @@ async def login(payload: UserLogin, response: Response, request: Request):
     
     # Return token in response for cross-domain usage
     return {
-        "user": UserOut(id=user["id"], name=user["name"], email=user["email"], role=user["role"]),
+        "user": user,
         "token": token
     }
 
