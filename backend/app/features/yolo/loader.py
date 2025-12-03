@@ -72,11 +72,18 @@ def load_model(filename: str):
     Returns:
         Loaded YOLOv5 model
     """
+    print(f"[MODEL] 🔄 Attempting to load model: {filename}")
+    
     if filename in _cache:
         print(f"[MODEL] 💾 Cached model loaded: {filename}")
         return _cache[filename]
 
-    weights = model_path(filename)  # Returns local path or remote URL
+    try:
+        weights = model_path(filename)  # Returns local path or remote URL
+        print(f"[MODEL] 📍 Model path resolved: {weights}")
+    except Exception as e:
+        print(f"[MODEL] ❌ Failed to resolve model path for {filename}: {e}")
+        raise
     
     # Determine if it's a URL or local path
     is_url = weights.startswith("http://") or weights.startswith("https://")
@@ -87,16 +94,28 @@ def load_model(filename: str):
         print(f"[MODEL] 📁 Loading YOLOv5 model from local path: {weights}")
     
     repo = str(YOLOV5_ROOT.resolve())
-    print(f"[DEBUG] Using local YOLOv5 repo: {repo}")
+    print(f"[MODEL] 📂 Using local YOLOv5 repo: {repo}")
+    print(f"[MODEL] 📂 YOLOv5 repo exists: {YOLOV5_ROOT.exists()}")
+    
+    # Check if hubconf.py exists
+    hubconf_path = YOLOV5_ROOT / "hubconf.py"
+    print(f"[MODEL] 📄 hubconf.py exists: {hubconf_path.exists()}")
+    if not hubconf_path.exists():
+        print(f"[MODEL] ❌ CRITICAL: hubconf.py not found at {hubconf_path}")
+        raise FileNotFoundError(f"hubconf.py not found at {hubconf_path}")
 
     try:
+        print(f"[MODEL] 🔧 Calling torch.hub.load...")
         # torch.hub.load can handle both local paths and URLs
         model = torch.hub.load(repo, "custom", path=weights, source="local", force_reload=True)
         print(f"[MODEL] ✅ Loaded YOLOv5 model successfully: {filename}")
     except Exception as e:
-        print(f"[ERROR] ❌ Failed to load YOLOv5 model: {filename}")
+        print(f"[MODEL] ❌ Failed to load YOLOv5 model: {filename}")
+        print(f"[MODEL] ❌ Error type: {type(e).__name__}")
+        print(f"[MODEL] ❌ Error message: {str(e)}")
         print(traceback.format_exc())
         raise
 
     _cache[filename] = model
+    print(f"[MODEL] 💾 Model cached: {filename}")
     return model
