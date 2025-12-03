@@ -25,7 +25,11 @@ axiosClient.interceptors.response.use(
       // Clear invalid token
       localStorage.removeItem("accessToken");
       // Redirect to login if not already there
-      if (!window.location.pathname.includes("/login")) {
+      // Redirect to login if not already there or on register page
+      if (
+        !window.location.pathname.includes("/login") &&
+        !window.location.pathname.includes("/register")
+      ) {
         window.location.href = "/login";
       }
     } else {

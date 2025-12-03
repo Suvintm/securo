@@ -9,22 +9,27 @@ const LoginPage = () => {
   const { setUser } = useAuth();
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false); // 🔥 LOADING STATE
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true); // 🔥 START LOADING
+    setError("");
+
     try {
       const res = await loginUser(form);
       setUser(res);
       navigate("/dashboard");
     } catch (err) {
       setError(err.response?.data?.detail || "Login failed");
+    } finally {
+      setLoading(false); // 🔥 STOP LOADING
     }
   };
 
   return (
     <div className="relative flex items-center justify-center min-h-screen overflow-hidden bg-gradient-to-b from-gray-900 via-gray-950 to-black text-white">
-      {/* 🌌 Floating animated bubbles */}
       {[...Array(15)].map((_, i) => (
         <motion.div
           key={i}
@@ -50,7 +55,6 @@ const LoginPage = () => {
         />
       ))}
 
-      {/* 🔒 Login Card */}
       <motion.form
         onSubmit={handleSubmit}
         initial={{ opacity: 0, y: 40 }}
@@ -68,7 +72,6 @@ const LoginPage = () => {
           </p>
         )}
 
-        {/* Email */}
         <div className="flex items-center bg-white/10 border border-gray-700 rounded-lg px-3 py-2 lg:py-6 mb-4">
           <Mail className="text-blue-400 mr-3" size={20} />
           <input
@@ -81,7 +84,6 @@ const LoginPage = () => {
           />
         </div>
 
-        {/* Password */}
         <div className="flex items-center bg-white/10 border border-gray-700 rounded-lg px-3 py-2 mb-6">
           <Lock className="text-blue-400 mr-3" size={20} />
           <input
@@ -94,14 +96,21 @@ const LoginPage = () => {
           />
         </div>
 
-        {/* Button */}
+        {/* 🔥 BUTTON WITH LOADER */}
         <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.97 }}
+          whileHover={{ scale: loading ? 1 : 1.05 }}
+          whileTap={{ scale: loading ? 1 : 0.97 }}
           type="submit"
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg shadow-blue-500/30 shadow-lg flex items-center justify-center gap-2"
+          disabled={loading}
+          className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-70 text-white font-semibold py-2 rounded-lg shadow-blue-500/30 shadow-lg flex items-center justify-center gap-2"
         >
-          <LogIn size={18} /> Login
+          {loading ? (
+            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+          ) : (
+            <>
+              <LogIn size={18} /> Login
+            </>
+          )}
         </motion.button>
 
         <p className="text-center text-sm text-gray-400 mt-5">
